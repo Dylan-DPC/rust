@@ -1370,7 +1370,7 @@ actual:\n\
         // Optionally prevent default --target if specified in test compile-flags.
         let custom_target = self.props.compile_flags
             .iter()
-            .fold(false, |acc, x| acc || x.starts_with("--target"));
+            .any(|x| x.starts_with("--target"));
 
         if !custom_target {
             let target = if self.props.force_host {
@@ -1403,6 +1403,11 @@ actual:\n\
                     rustc.args(&["--error-format", "json"]);
                 }
             }
+            Ui => {
+                if !self.props.compile_flags.iter().any(|s| s.starts_with("--error-format")) {
+                    rustc.args(&["--error-format", "json"]);
+                }
+            }
             MirOpt => {
                 rustc.args(&[
                     "-Zdump-mir=all",
@@ -1427,7 +1432,6 @@ actual:\n\
             Codegen |
             Rustdoc |
             RunMake |
-            Ui |
             CodegenUnits => {
                 // do not use JSON output
             }
@@ -2211,6 +2215,11 @@ actual:\n\
     }
 
     fn run_ui_test(&self) {
+        // if the user specified a format in the ui test
+        // print the output to the stderr file, otherwise extract
+        // the rendered error messages from json and print them
+        let explicit = self.props.compile_flags.iter().any(|s| s.contains("--error-format"));
+
         let proc_res = self.compile_test();
 
         let expected_stderr_path = self.expected_output_path("stderr");
@@ -2220,9 +2229,16 @@ actual:\n\
         let expected_stdout = self.load_expected_output(&expected_stdout_path);
 
         let normalized_stdout =
-            self.normalize_output(&proc_res.stdout, &self.props.normalize_stdout);
+            self.normalize_output(&proc_res.stdout, &self.props.normalize_stdout, explicit);
+
+        let stderr = if explicit {
+            proc_res.stderr.clone()
+        } else {
+            json::extract_rendered(&proc_res.stderr, &proc_res)
+        };
+
         let normalized_stderr =
-            self.normalize_output(&proc_res.stderr, &self.props.normalize_stderr);
+            self.normalize_output(&stderr, &self.props.normalize_stderr, explicit);
 
         let mut errors = 0;
         errors += self.compare_output("stdout", &normalized_stdout, &expected_stdout);
@@ -2241,11 +2257,22 @@ actual:\n\
                                 &proc_res);
         }
 
+        let expected_errors = errors::load_errors(&self.testpaths.file, self.revision);
+
         if self.props.run_pass {
             let proc_res = self.exec_compiled_test();
 
             if !proc_res.status.success() {
                 self.fatal_proc_rec("test run failed!", &proc_res);
+            }
+        }
+        if !explicit {
+            if !expected_errors.is_empty() || !proc_res.status.success() {
+                // "// error-pattern" comments
+                self.check_expected_errors(expected_errors, &proc_res);
+            } else if !self.props.error_patterns.is_empty() || !proc_res.status.success() {
+                // "//~ERROR comments"
+                self.check_error_patterns(&proc_res.stderr, &proc_res);
             }
         }
     }
@@ -2421,11 +2448,13 @@ actual:\n\
         mir_dump_dir
     }
 
-    fn normalize_output(&self, output: &str, custom_rules: &[(String, String)]) -> String {
+    fn normalize_output(
+        &self,
+        output: &str,
+        custom_rules: &[(String, String)],
+        json: bool,
+    ) -> String {
         let parent_dir = self.testpaths.file.parent().unwrap();
-        let cflags = self.props.compile_flags.join(" ");
-        let json = cflags.contains("--error-format json") ||
-                   cflags.contains("--error-format pretty-json");
         let parent_dir_str = if json {
             parent_dir.display().to_string().replace("\\", "\\\\")
         } else {
