@@ -1082,7 +1082,7 @@ impl<'a, 'tcx> InferCtxtExt<'tcx> for InferCtxt<'a, 'tcx> {
         let hir = self.tcx.hir();
         Some(match node {
             Node::Expr(&hir::Expr {
-                kind: hir::ExprKind::Closure(&hir::Closure { body, fn_decl_span, .. }),
+                kind: hir::ExprKind::Closure { body, fn_decl_span, .. },
                 ..
             }) => (
                 fn_decl_span,

@@ -922,17 +922,6 @@ pub struct Crate<'hir> {
     pub hir_hash: Fingerprint,
 }
 
-#[derive(Debug, HashStable_Generic)]
-pub struct Closure<'hir> {
-    pub binder: ClosureBinder,
-    pub capture_clause: CaptureBy,
-    pub bound_generic_params: &'hir [GenericParam<'hir>],
-    pub fn_decl: &'hir FnDecl<'hir>,
-    pub body: BodyId,
-    pub fn_decl_span: Span,
-    pub movability: Option<Movability>,
-}
-
 /// A block of statements `{ .. }`, which may have a label (in this case the
 /// `targeted_by_break` field will be `true`) and may be `unsafe` by means of
 /// the `rules` being anything but `DefaultBlock`.
@@ -1934,7 +1923,15 @@ pub enum ExprKind<'hir> {
     ///
     /// This may also be a generator literal or an `async block` as indicated by the
     /// `Option<Movability>`.
-    Closure(&'hir Closure<'hir>),
+    Closure {
+        binder: &'hir ClosureBinder,
+        capture_clause: CaptureBy,
+        bound_generic_params: &'hir [GenericParam<'hir>],
+        fn_decl: &'hir FnDecl<'hir>,
+        body: BodyId,
+        fn_decl_span: Span,
+        movability: Option<Movability>,
+    },
     /// A block (e.g., `'label: { ... }`).
     Block(&'hir Block<'hir>, Option<Label>),
 
