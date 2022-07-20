@@ -866,30 +866,19 @@ impl<'a: 'ast, 'ast> Visitor<'ast> for LateResolutionVisitor<'a, '_, 'ast> {
                             this.in_func_body = previous_state;
                         }
                     }
-                    FnKind::Closure(binder, declaration, body) => {
-                        this.visit_closure_binder(binder);
-
+                    FnKind::Closure(declaration, body) => {
+                        // We do not have any explicit generic lifetime parameter.
+                        // FIXME(rfc3216): Change when implementing `for<>` bounds on closures.
                         this.with_lifetime_rib(
-                            match binder {
-                                // We do not have any explicit generic lifetime parameter.
-                                ClosureBinder::NotPresent => {
-                                    LifetimeRibKind::AnonymousCreateParameter {
-                                        binder: fn_id,
-                                        report_in_path: false,
-                                    }
-                                }
-                                ClosureBinder::For { .. } => LifetimeRibKind::AnonymousReportError,
+                            LifetimeRibKind::AnonymousCreateParameter {
+                                binder: fn_id,
+                                report_in_path: false,
                             },
                             // Add each argument to the rib.
                             |this| this.resolve_params(&declaration.inputs),
                         );
                         this.with_lifetime_rib(
-                            match binder {
-                                ClosureBinder::NotPresent => {
-                                    LifetimeRibKind::AnonymousPassThrough(fn_id, true)
-                                }
-                                ClosureBinder::For { .. } => LifetimeRibKind::AnonymousReportError,
-                            },
+                            LifetimeRibKind::AnonymousPassThrough(fn_id, true),
                             |this| visit::walk_fn_ret_ty(this, &declaration.output),
                         );
 
@@ -921,18 +910,6 @@ impl<'a: 'ast, 'ast> Visitor<'ast> for LateResolutionVisitor<'a, '_, 'ast> {
         );
         for p in &generics.where_clause.predicates {
             self.visit_where_predicate(p);
-        }
-    }
-
-    fn visit_closure_binder(&mut self, b: &'ast ClosureBinder) {
-        match b {
-            ClosureBinder::NotPresent => {}
-            ClosureBinder::For { generic_params, .. } => {
-                self.visit_generic_params(
-                    &generic_params,
-                    self.diagnostic_metadata.current_self_item.is_some(),
-                );
-            }
         }
     }
 
@@ -3560,18 +3537,6 @@ impl<'a: 'ast, 'b, 'ast> LateResolutionVisitor<'a, 'b, 'ast> {
                 });
             }
             // For closures, ClosureOrAsyncRibKind is added in visit_fn
-            ExprKind::Closure(ClosureBinder::For { ref generic_params, span }, ..) => {
-                self.with_generic_param_rib(
-                    &generic_params,
-                    NormalRibKind,
-                    LifetimeRibKind::Generics {
-                        binder: expr.id,
-                        kind: LifetimeBinderKind::Function,
-                        span,
-                    },
-                    |this| visit::walk_expr(this, expr),
-                );
-            }
             ExprKind::Closure(..) => visit::walk_expr(self, expr),
             ExprKind::Async(..) => {
                 self.with_label_rib(ClosureOrAsyncRibKind, |this| visit::walk_expr(this, expr));

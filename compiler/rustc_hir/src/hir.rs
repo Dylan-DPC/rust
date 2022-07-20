@@ -1924,7 +1924,6 @@ pub enum ExprKind<'hir> {
     /// This may also be a generator literal or an `async block` as indicated by the
     /// `Option<Movability>`.
     Closure {
-        binder: &'hir ClosureBinder,
         capture_clause: CaptureBy,
         bound_generic_params: &'hir [GenericParam<'hir>],
         fn_decl: &'hir FnDecl<'hir>,
@@ -2707,17 +2706,6 @@ impl FnRetTy<'_> {
             Self::Return(ref ty) => ty.span,
         }
     }
-}
-
-/// Represents `for<...>` binder before a closure
-#[derive(Copy, Clone, Debug, HashStable_Generic)]
-pub enum ClosureBinder {
-    /// Binder is not specified.
-    Default,
-    /// Binder is specified.
-    ///
-    /// Span points to the whole `for<...>`.
-    For { span: Span },
 }
 
 #[derive(Encodable, Debug, HashStable_Generic)]

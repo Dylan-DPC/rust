@@ -928,7 +928,7 @@ pub fn walk_fn_kind<'v, V: Visitor<'v>>(visitor: &mut V, function_kind: FnKind<'
         FnKind::ItemFn(_, generics, ..) => {
             visitor.visit_generics(generics);
         }
-        FnKind::Closure | FnKind::Method(..) => {}
+        FnKind::Method(..) | FnKind::Closure => {}
     }
 }
 
@@ -1148,7 +1148,6 @@ pub fn walk_expr<'v, V: Visitor<'v>>(visitor: &mut V, expression: &'v Expr<'v>) 
             walk_list!(visitor, visit_arm, arms);
         }
         ExprKind::Closure {
-            binder: _,
             bound_generic_params,
             ref fn_decl,
             body,
@@ -1157,13 +1156,7 @@ pub fn walk_expr<'v, V: Visitor<'v>>(visitor: &mut V, expression: &'v Expr<'v>) 
             movability: _,
         } => {
             walk_list!(visitor, visit_generic_param, bound_generic_params);
-            visitor.visit_fn(
-                FnKind::Closure,
-                fn_decl,
-                body,
-                expression.span,
-                expression.hir_id,
-            )
+            visitor.visit_fn(FnKind::Closure, fn_decl, body, expression.span, expression.hir_id)
         }
         ExprKind::Block(ref block, ref opt_label) => {
             walk_list!(visitor, visit_label, opt_label);

@@ -154,7 +154,6 @@ impl<'a, T: EarlyLintPass> ast_visit::Visitor<'a> for EarlyContextAndPass<'a, T>
                 self.check_id(closure_id);
             }
         }
-
         run_early_pass!(self, check_fn_post, fk, span, id);
     }
 
