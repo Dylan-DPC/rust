@@ -268,7 +268,6 @@ enum LifetimeBinderKind {
     WhereBound,
     Item,
     Function,
-    Closure,
     ImplBlock,
 }
 
@@ -282,7 +281,6 @@ impl LifetimeBinderKind {
             Item => "item",
             ImplBlock => "impl block",
             Function => "function",
-            Closure => "closure",
         }
     }
 }
@@ -3568,7 +3566,7 @@ impl<'a: 'ast, 'b, 'ast> LateResolutionVisitor<'a, 'b, 'ast> {
                     NormalRibKind,
                     LifetimeRibKind::Generics {
                         binder: expr.id,
-                        kind: LifetimeBinderKind::Closure,
+                        kind: LifetimeBinderKind::Function,
                         span,
                     },
                     |this| visit::walk_expr(this, expr),
