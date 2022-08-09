@@ -21,7 +21,7 @@ use rustc_infer::infer::{self, InferOk};
 use rustc_middle::ty::subst::Subst;
 use rustc_middle::ty::subst::{InternalSubsts, SubstsRef};
 use rustc_middle::ty::{
-    self, AssocKind, DefIdTree, GenericParamDefKind, ProjectionPredicate, ProjectionTy, Term,
+    self, AssocKind, GenericParamDefKind, ProjectionPredicate, ProjectionTy, Term,
     ToPredicate, Ty, TypeVisitable,
 };
 use rustc_span::symbol::Ident;
@@ -61,7 +61,7 @@ pub enum MethodError<'tcx> {
 
     // Found a `Self: Sized` bound where `Self` is a trait object, also the caller may have
     // forgotten to import a trait.
-    IllegalSizedBound(Vec<DefId>, bool, Span),
+    IllegalSizedBound(bool, Span),
 
     // Found a match, but the return type is wrong
     BadReturnType,
@@ -223,7 +223,7 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
             }
 
             // We probe again, taking all traits into account (not only those in scope).
-            let mut candidates = match self.lookup_probe(
+            let _candidates = match self.lookup_probe(
                 span,
                 segment.ident,
                 self_ty,
@@ -245,9 +245,8 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
                     .collect(),
                 _ => Vec::new(),
             };
-            candidates.retain(|candidate| *candidate != self.tcx.parent(result.callee.def_id));
 
-            return Err(IllegalSizedBound(candidates, needs_mut, span));
+            return Err(IllegalSizedBound(needs_mut, span));
         }
 
         Ok(result.callee)

@@ -1112,21 +1112,10 @@ impl<'a, 'tcx> FnCtxt<'a, 'tcx> {
                 err.emit();
             }
 
-            MethodError::IllegalSizedBound(candidates, needs_mut, bound_span) => {
+            MethodError::IllegalSizedBound(needs_mut, bound_span) => {
                 let msg = format!("the `{}` method cannot be invoked on a trait object", item_name);
                 let mut err = self.sess().struct_span_err(span, &msg);
                 err.span_label(bound_span, "this has a `Sized` requirement");
-                if !candidates.is_empty() {
-                    let help = format!(
-                        "{an}other candidate{s} {were} found in the following trait{s}, perhaps \
-                         add a `use` for {one_of_them}:",
-                        an = if candidates.len() == 1 { "an" } else { "" },
-                        s = pluralize!(candidates.len()),
-                        were = pluralize!("was", candidates.len()),
-                        one_of_them = if candidates.len() == 1 { "it" } else { "one_of_them" },
-                    );
-                    self.suggest_use_candidates(&mut err, help, candidates);
-                }
                 if let ty::Ref(region, t_type, mutability) = rcvr_ty.kind() {
                     if needs_mut {
                         let trait_type = self.tcx.mk_ref(
