@@ -157,6 +157,25 @@ pub(crate) enum InvalidComparisonOperatorSub {
 }
 
 #[derive(Diagnostic)]
+#[diag(parse_invalid_shift_operator)]
+#[note]
+pub(crate) struct InvalidShiftOperator {
+    #[primary_span]
+    pub Span: Span,
+    pub invalid: String,
+    #[subdiagnostic]
+    pub sub: InvalidShiftOperatorSub
+}
+
+#[derive(SessionSubdiagnostic)]
+pub enum InvalidShiftOperatorSub {
+    #[label(parser_left_shift_operator_invalid)]
+    LogicalLeftShift(#[primary_span] Span),
+    #[label(parser_logical_right_shift_operator)]
+    LogicalRightShift(#[primary_span] Span),
+}
+
+#[derive(Diagnostic)]
 #[diag(parse_invalid_logical_operator)]
 #[note]
 pub(crate) struct InvalidLogicalOperator {

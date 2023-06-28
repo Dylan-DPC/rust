@@ -271,6 +271,29 @@ impl<'a> Parser<'a> {
                 self.bump();
             }
 
+            // Look for the logical right shift operator (`>>>`) and recover
+            if op.node == AssocOp::ShiftRight && self.token.kind == token::Gt && self.prev_token.span.hi() == self.token.span.lo() {
+                let sp = op.span.to(self.token.span);
+                self.sess.emit_err(errors::InvalidShiftOperator {
+                    span: sp,
+                    invalid: ">>>".into(),
+                    sub: errors::InvalidShiftOperatorSub::LogicalRightShift(sp),
+                });
+                self.bump();
+            }
+
+            // Look for the logical left shift operator (`<<<`) and recover
+            if op.node == AssocOp::ShiftLeft && self.token.kind == token::Lt && self.prev_token.span.hi() == self.token.span.lo() {
+                let sp = op.span.to(self.token.span);
+                self.sess.emit_err(errors::InvalidShiftOperator {
+                    span: sp,
+                    invalid: "<<<".into(),
+                    sub: errors::InvalidShiftOperatorSub::LogicalLeftShift(sp),
+                });
+                self.bump();
+            }
+
+
             if self.prev_token == token::BinOp(token::Plus)
                 && self.token == token::BinOp(token::Plus)
                 && self.prev_token.span.between(self.token.span).is_empty()

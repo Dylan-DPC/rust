@@ -397,6 +397,11 @@ parse_invalid_literal_suffix_on_tuple_index = suffixes on a tuple index are inva
     .tuple_exception_line_2 = on proc macros, you'll want to use `syn::Index::from` or `proc_macro::Literal::*_unsuffixed` for code that will desugar to tuple field access
     .tuple_exception_line_3 = see issue #60210 <https://github.com/rust-lang/rust/issues/60210> for more information
 
+
+parser_invalid_shift_operator = invalid shift operator `{$invalid}`
+    .logical_left_shift_operator_invalid = `<<<` is not a valid left shift operator, consider shifting normally and fixing the sign as needed
+    .logical_right_shift_operator_invalid = `>>>` is not a valid right shift operator, consider casting to an unsigned integer and right shifting normally
+
 parse_invalid_logical_operator = `{$incorrect}` is not a logical operator
     .note = unlike in e.g., Python and PHP, `&&` and `||` are used for logical operators
     .use_amp_amp_for_conjunction = use `&&` to perform logical conjunction
